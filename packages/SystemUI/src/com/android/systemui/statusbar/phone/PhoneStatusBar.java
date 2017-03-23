@@ -1962,9 +1962,21 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         }
         boolean isHeadsUped = shouldPeek(shadeEntry);
         if (isHeadsUped) {
-            mHeadsUpManager.showNotification(shadeEntry);
-            // Mark as seen immediately
-            setNotificationShown(notification);
+            // filter out alarms if required
+            if (notification.getNotification().category != null &&
+                    notification.getNotification().category.equals(Notification.CATEGORY_ALARM)) {
+                boolean fullscreenAlarm = Settings.System.getIntForUser(mContext.getContentResolver(),
+                        Settings.System.SHOW_ALARM_FULLSCREEN, 0, mCurrentUserId) == 1;
+                if (fullscreenAlarm) {
+                    if (DEBUG) Log.d(TAG, "launching alarm notification in fullscreen mode");
+                    isHeadsUped = false;
+                }
+            }
+            if (isHeadsUped) {
+                mHeadsUpManager.showNotification(shadeEntry);
+                // Mark as seen immediately
+                setNotificationShown(notification);
+            }
         }
 
         if (!isHeadsUped && notification.getNotification().fullScreenIntent != null) {
@@ -2670,7 +2682,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         }
 
         Drawable artworkDrawable = null;
-        if (mMediaMetadata != null) {
+        if (mMediaMetadata != null && (Settings.System.getIntForUser(mContext.getContentResolver(),
+            Settings.System.LOCKSCREEN_MEDIA_METADATA, 1, UserHandle.USER_CURRENT) == 1)) {
             Bitmap artworkBitmap = null;
             artworkBitmap = mMediaMetadata.getBitmap(MediaMetadata.METADATA_KEY_ART);
             if (artworkBitmap == null) {
